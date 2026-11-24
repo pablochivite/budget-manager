@@ -1,16 +1,24 @@
 # AI disclosure
 
-Tool: Claude (Anthropic), used through Claude Code.
+Tool: Claude (Anthropic), through Claude Code.
 
-What I used it for:
-- A step-by-step guide for this practice, following the professor's brief.
-- Code for models.py, validation.py, services.py, storage.py and cli.py,
-  the sample data and the tests. I typed or pasted each file myself,
-  ran every command and checked the output against what I expected.
+What the AI produced:
+- A step-by-step plan for the practice, based on the professor's brief.
+- The code in models.py, validation.py, services.py, storage.py and cli.py,
+  plus the sample data and the tests. I typed or pasted each file myself, ran
+  every command and compared the output with what I expected.
+- After a review, two fixes: amounts such as "inf" and "nan" are now rejected,
+  and add/undo no longer rewrite a file that has invalid rows (which used to
+  delete those rows). It also wrote the tests for both fixes.
+- The paragraph in DESIGN.md, which I read and checked against the code.
 
-Why: to see how a layered, tested project is put together, which I had not
-built before.
+Why I used it: I had never built a layered, tested project before and wanted
+to see how one fits together.
 
 What I checked and can explain:
-- [write 2-3 things in your own words, for example why validation is in
-  one place, or why undo saves the file immediately]
+- Validation lives in one place: make_transaction checks both typed input and
+  CSV rows, so the two paths can never apply different rules.
+- Unknown categories, kinds and currencies are rejected, not guessed, and each
+  error says which row and field failed.
+- Undo saves the file straight away, so after a crash and reload the file still
+  matches what the program showed.
