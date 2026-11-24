@@ -51,6 +51,11 @@ def main() -> None:
         print(f"warning: {args.file}: {message} (row skipped)", file=sys.stderr)
 
     try:
+        if args.command in ("add", "undo") and errors:
+            # Saving would rewrite the file without the skipped rows and lose them.
+            raise ValueError(
+                f"{args.file} has {len(errors)} invalid rows; fix them first (nothing saved)"
+            )
         if args.command == "add":
             transactions = services.add(
                 transactions, args.amount, args.kind, args.category, args.date

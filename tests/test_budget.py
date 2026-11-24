@@ -1,9 +1,15 @@
 """Run with: uv run pytest -v"""
 
+import shutil
+import sys
+from pathlib import Path
+
 import pytest
 
-from budget_manager import services, storage
+from budget_manager import cli, services, storage
 from budget_manager.validation import check_amount
+
+SAMPLE = Path(__file__).parent.parent / "data" / "sample_transactions.csv"
 
 
 def test_summary_normal_case():
@@ -18,9 +24,15 @@ def test_summary_normal_case():
     }
 
 
-@pytest.mark.parametrize("text", ["0", "-5", "abc", "1.005"])
+@pytest.mark.parametrize("text", ["0", "-5", "abc", "1.005", "inf", "-inf", "nan"])
 def test_bad_amounts_are_rejected(text):
     with pytest.raises(ValueError):
+        check_amount(text)
+
+
+@pytest.mark.parametrize("text", ["inf", "nan"])
+def test_infinite_or_nan_amount_gets_a_clear_message(text):
+    with pytest.raises(ValueError, match="amount must be a finite number"):
         check_amount(text)
 
 
@@ -56,8 +68,21 @@ def test_undo_with_nothing_left_fails():
 
 
 def test_sample_data_reports_each_bad_row():
-    from pathlib import Path
-
-    good, errors = storage.load(Path("data/sample_transactions.csv"))
+    good, errors = storage.load(SAMPLE)
     assert len(good) == 5
     assert [e.split(":")[0] for e in errors] == ["Row 5", "Row 7", "Row 8", "Row 9"]
+
+
+@pytest.mark.parametrize("command", [["add", "3", "--category", "food"], ["undo"]])
+def test_file_with_invalid_rows_is_never_rewritten(tmp_path, monkeypatch, capsys, command):
+    path = tmp_path / "t.csv"
+    shutil.copy(SAMPLE, path)
+    before = path.read_bytes()
+    monkeypatch.setattr(sys, "argv", ["budget", "--file", str(path), *command])
+
+    with pytest.raises(SystemExit) as exit_info:
+        cli.main()
+
+    assert exit_info.value.code == 2
+    assert path.read_bytes() == before
+    assert "4 invalid rows" in capsys.readouterr().err

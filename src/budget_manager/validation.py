@@ -1,5 +1,6 @@
 """All the rules in one place. Every check raises ValueError with a clear message."""
 
+import math
 from datetime import date
 
 from budget_manager.models import CATEGORIES, CURRENCIES, KINDS, Transaction
@@ -11,6 +12,8 @@ def check_amount(text: str) -> float:
         amount = float(text)
     except ValueError:
         raise ValueError(f"amount must be a number, got {text!r}") from None
+    if not math.isfinite(amount):  # float() accepts "inf" and "nan"
+        raise ValueError(f"amount must be a finite number, got {text!r}")
     if amount <= 0:
         raise ValueError(f"amount must be > 0, got {text}")
     if round(amount, 2) != amount:
